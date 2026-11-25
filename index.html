@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>orienta_farah</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Segoe UI, system-ui, sans-serif; }
+    body { background: #f1f5f9; color: #0f172a; width: 100vw; height: 100vh; overflow: hidden; }
+    body.rtl { direction: rtl; text-align: right; }
+    .app { width: 100%; height: 100%; background: #fff; display: flex; flex-direction: column; overflow: hidden; }
+    header { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: #fff; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+    header h1 { font-size: 1.3rem; }
+    header p { font-size: 0.85rem; opacity: .9; }
+    .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    select, button, input { border-radius: 8px; font-size: 0.88rem; }
+    select, button { border: none; padding: 8px 12px; cursor: pointer; }
+    select { background: rgba(255,255,255,.18); color: #fff; }
+    select option { color: #0f172a; background: #fff; }
+    .btn-ghost { background: rgba(255,255,255,.22); color: #fff; }
+    #setup { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 24px; gap: 14px; overflow-y: auto; }
+    #setup h2 { font-size: 1.55rem; max-width: 680px; }
+    #setup p { color: #64748b; max-width: 640px; line-height: 1.6; }
+    .lang-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .lang-btn { border: 1.5px solid #cbd5e1; background: #f8fafc; color: #0f172a; font-weight: 600; }
+    .lang-btn.active { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
+    .api-box { width: 100%; max-width: 580px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; text-align: start; }
+    .api-box label { font-size: 0.84rem; font-weight: 600; color: #334155; }
+    .api-box select, .api-box input { width: 100%; border: 1.5px solid #cbd5e1; background: #fff; color: #0f172a; padding: 9px 11px; outline: none; }
+    .api-box input:focus, .api-box select:focus { border-color: #2563eb; }
+    .setup-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center; }
+    .btn-test { background: #e2e8f0; color: #0f172a; padding: 11px 16px; font-weight: 600; }
+    .btn-main { background: #2563eb; color: #fff; padding: 12px 24px; font-size: 1rem; font-weight: 600; }
+    .status-msg { font-size: 0.82rem; font-weight: 600; min-height: 18px; max-width: 640px; word-break: break-word; }
+    .status-err { color: #b91c1c; }
+    .status-ok { color: #15803d; }
+    #chat { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .bar { height: 6px; background: #e2e8f0; width: 100%; }
+    .bar-fill { height: 100%; width: 0%; background: #10b981; transition: .3s; }
+    .grades-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 24px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 0.86rem; }
+    .grades-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .btn-upload { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 7px 12px; font-weight: 600; }
+    .btn-analyze-grades { background: #0f766e; color: #fff; padding: 7px 14px; font-weight: 600; }
+    .btn-analyze-grades:disabled { opacity: 0.5; cursor: not-allowed; }
+    .grade-badge { font-size: 0.8rem; color: #334155; font-weight: 600; }
+    #msgs { flex: 1; overflow-y: auto; padding: 20px 28px; display: flex; flex-direction: column; gap: 14px; }
+    .msg { max-width: 90%; padding: 14px 18px; border-radius: 14px; line-height: 1.65; font-size: 0.96rem; }
+    .bot { background: #f8fafc; border: 1px solid #e2e8f0; align-self: flex-start; }
+    .user { background: #2563eb; color: #fff; align-self: flex-end; white-space: pre-wrap; }
+    .tag { display: inline-block; background: #ede9fe; color: #5b21b6; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-bottom: 8px; }
+    .tag.err { background: #fee2e2; color: #991b1b; }
+    .tag.grades { background: #ccfbf1; color: #115e59; }
+    .sec-title { font-size: 1.04rem; font-weight: 700; color: #1e3a8a; margin-top: 12px; margin-bottom: 6px; }
+    .sec-title:first-child { margin-top: 2px; }
+    .msg p { margin-bottom: 8px; color: #1e293b; }
+    .msg ul { padding-inline-start: 22px; margin-bottom: 8px; }
+    .msg li { margin-bottom: 5px; color: #1e293b; }
+    .msg hr { border: none; border-top: 1px solid #e2e8f0; margin: 10px 0; }
+    .input-row { display: flex; gap: 10px; padding: 14px 24px; border-top: 1px solid #e2e8f0; background: #fff; }
+    .input-row input { flex: 1; padding: 11px 14px; border: 1.5px solid #cbd5e1; font-size: 0.96rem; outline: none; }
+    .input-row input:focus { border-color: #2563eb; }
+    .btn-send { background: #2563eb; color: #fff; padding: 0 20px; font-weight: 600; }
+    .btn-send:disabled { opacity: 0.6; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1 id="t-title">orienta_farah</h1>
+      <p id="t-sub">Agent d'orientation post-bac - 100% Réponse API</p>
+    </div>
+    <div class="controls">
+      <select id="lang-sel" onchange="setLang(this.value)">
+        <option value="fr">Français</option>
+        <option value="ar">العربية</option>
+        <option value="en">English</option>
+      </select>
+      <button type="button" class="btn-ghost" id="t-reset" onclick="resetApp()">Recommencer</button>
+    </div>
+  </header>
+
+  <div id="setup">
+    <h2 id="t-head">Trouve une filiere qui te ressemble apres le Bac</h2>
+    <p id="t-desc">Agent orienta_farah propulse 100% par API : choisis ta langue, entre ta cle API, verifie le modele et commence.</p>
+    <div class="lang-row">
+      <button type="button" class="lang-btn active" data-l="fr" onclick="setLang('fr')">Français</button>
+      <button type="button" class="lang-btn" data-l="ar" onclick="setLang('ar')">العربية</button>
+      <button type="button" class="lang-btn" data-l="en" onclick="setLang('en')">English</button>
+    </div>
+
+    <div class="api-box">
+      <label id="t-provider-lbl" for="api-provider">Fournisseur API</label>
+      <select id="api-provider" onchange="onProviderChange()">
+        <option value="groq">Groq API (gsk_...)</option>
+        <option value="gemini">Gemini API (AIza...)</option>
+      </select>
+
+      <label id="t-key-lbl" for="api-key-inp">Cle API (obligatoire)</label>
+      <input type="password" id="api-key-inp" placeholder="Colle ta cle API ici (ex: gsk_... ou AIza...)" />
+
+      <label id="t-model-lbl" for="api-model-inp">Modèle</label>
+      <input type="text" id="api-model-inp" value="openai/gpt-oss-20b" />
+    </div>
+
+    <div class="status-msg" id="setup-status"></div>
+
+    <div class="setup-actions">
+      <button type="button" class="btn-test" id="t-models" onclick="fetchAvailableModels()">Voir mes modèles</button>
+      <button type="button" class="btn-test" id="t-test" onclick="testApiKey()">Tester la clé API</button>
+      <button type="button" class="btn-main" id="t-start" onclick="startApp()">Commencer</button>
+    </div>
+  </div>
+
+  <div id="chat">
+    <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
+    <div class="grades-bar">
+      <div class="grades-left">
+        <input type="file" id="grade-file-inp" accept=".pdf,.txt,.csv,.json,.png,.jpg,.jpeg,.webp" style="display:none" onchange="onGradeFileSelected(event)" />
+        <button type="button" class="btn-upload" id="t-upload" onclick="document.getElementById('grade-file-inp').click()">Importer relevé de notes</button>
+        <span class="grade-badge" id="grade-status">Aucun relevé importé</span>
+      </div>
+      <button type="button" class="btn-analyze-grades" id="t-analyze-grades" onclick="analyzeGrades()" disabled>Analyser notes, écoles & concours</button>
+    </div>
+    <div id="msgs"></div>
+    <div class="input-row">
+      <input type="text" id="inp" placeholder="Ecris ta reponse ici..." onkeydown="if(event.key==='Enter') onSend()" />
+      <button type="button" class="btn-send" id="t-send" onclick="onSend()">Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+}
+
+const TOTAL = 7;
+let lang = "fr";
+let step = 0;
+let historyQA = [];
+let provider = "groq";
+let apiKey = "";
+let modelName = "openai/gpt-oss-20b";
+let gradeData = null; // { name, text, images: [{ base64, mimeType }] }
+
+const QUESTION_TOPICS = {
+  fr: {
+    1: "Filière du Bac, matières préférées et ce qui attire l'élève",
+    2: "Préférence entre théorie/concepts et pratique/expérimentation concrète",
+    3: "Activités et loisirs en dehors des cours",
+    4: "Ce que l'élève apprend ou comprend le plus facilement et le plus vite",
+    5: "Préférence entre travail seul ou travail en groupe",
+    6: "Critères principaux pour le futur métier (salaire, stabilité, liberté, utilité)",
+    7: "Durée d'études souhaitée (parcours court 2-3 ans ou parcours long 5 ans)"
+  },
+  ar: {
+    1: "شعبة البكالوريا، المواد المفضلة وما يشد الطالب",
+    2: "التفضيل بين الجانب النظري والتطبيق العملي أو التجربة",
+    3: "الأنشطة والهوايات خارج أوقات الدراسة",
+    4: "المجال أو النشاط الذي يفهمه ويتقنه الطالب بسرعة أكبر",
+    5: "تفضيل العمل الفردي أم العمل ضمن مجموعة",
+    6: "أهم معيار في المهنة المستقبلية (الراتب، الاستقرار، الحرية، النفع)",
+    7: "مدة الدراسة المفضلة (مسار قصير 2-3 سنوات أم مسار طويل 5 سنوات)"
+  },
+  en: {
+    1: "High school track, favorite subjects, and core interests",
+    2: "Preference between theory/concepts and hands-on practice/experiments",
+    3: "Activities and hobbies outside of classes",
+    4: "What the student picks up fastest and most easily",
+    5: "Preference between working alone or working in a group",
+    6: "Top career priority (pay, stability, freedom, practical impact)",
+    7: "Preferred study length (shorter 2-3 years or longer 5 years)"
+  }
+};
+
+const I18N = {
+  fr: {
+    sub: "Agent d'orientation post-bac - 100% Réponse API",
+    reset: "Recommencer",
+    head: "Trouve une filiere qui te ressemble apres le Bac",
+    desc: "Agent orienta_farah propulse 100% par API : choisis ta langue, entre ta cle API, verifie le modele et commence.",
+    providerLbl: "Fournisseur API",
+    keyLbl: "Cle API (obligatoire)",
+    modelLbl: "Modèle",
+    keyPh: "Colle ta cle API ici (ex: gsk_... ou AIza...)",
+    needKey: "Merci d'entrer une cle API d'abord.",
+    needModel: "Merci d'entrer un nom de modèle.",
+    nonChatModel: "Ce modèle n'est pas un modèle de discussion/texte (ex: prompt-guard ou whisper). Utilise un modèle de chat comme openai/gpt-oss-20b.",
+    mismatchGroq: "La clé commence par AIza... (Gemini). Choisis 'Gemini API' ou colle une clé Groq (gsk_...).",
+    mismatchGemini: "La clé commence par gsk_... (Groq). Choisis 'Groq API' ou colle une clé Gemini (AIza...).",
+    testing: "Test en cours...",
+    testOk: "Clé et modèle valides ! Tu peux cliquer sur Commencer.",
+    loadingModels: "Récupération de tes modèles...",
+    modelsFound: "Modèle de discussion sélectionné : ",
+    noModels: "Aucun modèle de discussion retourné.",
+    modelsBtn: "Voir mes modèles",
+    testBtn: "Tester la clé API",
+    start: "Commencer",
+    uploadBtn: "Importer relevé de notes",
+    noGrade: "Aucun relevé importé (.pdf, .txt, .csv, .png, .jpg)",
+    readingPdf: "Lecture du PDF en cours...",
+    gradeLoaded: "Relevé chargé : ",
+    analyzeGradesBtn: "Analyser notes, écoles & concours",
+    imageNeedsGemini: "Ce relevé est un PDF scanné ou une image : choisis 'Gemini API' pour qu'il lise visuellement les notes (ou utilise un PDF/TXT avec texte).",
+    ph: "Ecris ta reponse ici...",
+    phExtra: "Pose n'importe quelle question (filieres, écoles, concours, préparation, langues, metiers)...",
+    send: "Envoyer",
+    thinking: "Réponse API en cours...",
+    apiTag: "Réponse API",
+    gradesTag: "Réponse API • Analyse Relevé & Concours",
+    errTag: "Erreur API",
+    qTag: function(n) { return "Réponse API • Question " + n + "/" + TOTAL; },
+    bTag: "Réponse API • Bilan orienta_farah",
+    apiFailPrefix: "Impossible d'obtenir une réponse API pour le moment : "
+  },
+  ar: {
+    sub: "وكيل التوجيه بعد البكالوريا - 100% إجابة API",
+    reset: "إعادة البدء",
+    head: "اكتشف التخصص الذي يناسبك بعد البكالوريا",
+    desc: "وكيل orienta_farah يعتمد كلياً على API: اختر لغتك، أدخل مفتاح API، تحقق من النموذج ثم ابدأ.",
+    providerLbl: "مزود API",
+    keyLbl: "مفتاح API (إجباري)",
+    modelLbl: "النموذج (Model)",
+    keyPh: "ألصق مفتاح API هنا...",
+    needKey: "يرجى إدخال مفتاح API أولاً.",
+    needModel: "يرجى إدخال اسم النموذج.",
+    nonChatModel: "هذا النموذج ليس نموذج محادثة نصية (مثل guard أو whisper). استعمل نموذج محادثة مثل openai/gpt-oss-20b.",
+    mismatchGroq: "المفتاح يبدأ بـ AIza... (Gemini). اختر Gemini API أو أدخل مفتاح Groq (gsk_...).",
+    mismatchGemini: "المفتاح يبدأ بـ gsk_... (Groq). اختر Groq API أو أدخل مفتاح Gemini (AIza...).",
+    testing: "جاري الاختبار...",
+    testOk: "المفتاح والنموذج صالحان! يمكنك الضغط على ابدأ الآن.",
+    loadingModels: "جاري جلب النماذج المتاحة...",
+    modelsFound: "تم اختيار نموذج محادثة متاح: ",
+    noModels: "لم يتم إرجاع أي نموذج محادثة مناسب.",
+    modelsBtn: "عرض نماذجي",
+    testBtn: "اختبار المفتاح",
+    start: "ابدأ الآن",
+    uploadBtn: "استيراد بيان النقط",
+    noGrade: "لم يتم استيراد بيان نقط (.pdf, .txt, .csv, .png, .jpg)",
+    readingPdf: "جاري قراءة ملف PDF...",
+    gradeLoaded: "تم تحميل بيان النقط: ",
+    analyzeGradesBtn: "تحليل النقط والمدارس والمباريات",
+    imageNeedsGemini: "هذا الملف PDF ممسوح ضوئياً أو صورة: اختر Gemini API لقراءة النقط بصرياً أو استعمل ملفاً نصياً.",
+    ph: "اكتب إجابتك هنا...",
+    phExtra: "اطرح أي سؤال حول الشعب، المدارس، المباريات، التحضير، اللغات أو الآفاق...",
+    send: "إرسال",
+    thinking: "جاري توليد الإجابة عبر API...",
+    apiTag: "إجابة API",
+    gradesTag: "إجابة API • تحليل النقط والمدارس والمباريات",
+    errTag: "خطأ API",
+    qTag: function(n) { return "إجابة API • سؤال " + n + "/" + TOTAL; },
+    bTag: "إجابة API • حصيلة orienta_farah",
+    apiFailPrefix: "تعذر الحصول على إجابة من API حالياً: "
+  },
+  en: {
+    sub: "Post-graduation guidance agent - 100% API Response",
+    reset: "Restart",
+    head: "Find a study track that fits you after graduation",
+    desc: "orienta_farah powered 100% by API: pick your language, enter your API key, check the model, and start.",
+    providerLbl: "API Provider",
+    keyLbl: "API Key (required)",
+    modelLbl: "Model",
+    keyPh: "Paste your API key here...",
+    needKey: "Please enter an API key first.",
+    needModel: "Please enter a model name.",
+    nonChatModel: "This model is not a chat/text generation model (e.g. prompt-guard or whisper). Use a chat model like openai/gpt-oss-20b.",
+    mismatchGroq: "Key starts with AIza... (Gemini). Select 'Gemini API' or use a Groq key (gsk_...).",
+    mismatchGemini: "Key starts with gsk_... (Groq). Select 'Groq API' or use a Gemini key (AIza...).",
+    testing: "Testing...",
+    testOk: "API key and model valid! Click Start to begin.",
+    loadingModels: "Fetching your available models...",
+    modelsFound: "Selected chat model: ",
+    noModels: "No suitable chat model returned.",
+    modelsBtn: "List my models",
+    testBtn: "Test API key",
+    start: "Start",
+    uploadBtn: "Import grade sheet",
+    noGrade: "No grade sheet imported (.pdf, .txt, .csv, .png, .jpg)",
+    readingPdf: "Reading PDF file...",
+    gradeLoaded: "Loaded grade sheet: ",
+    analyzeGradesBtn: "Analyze grades, schools & exams",
+    imageNeedsGemini: "This grade sheet is a scanned PDF or image: select 'Gemini API' for visual reading (or use a text-based PDF/TXT).",
+    ph: "Type your answer here...",
+    phExtra: "Ask any question (tracks, schools, entrance exams, prep plan, languages, careers)...",
+    send: "Send",
+    thinking: "Generating API response...",
+    apiTag: "API Response",
+    gradesTag: "API Response • Grades, Schools & Exams",
+    errTag: "API Error",
+    qTag: function(n) { return "API Response • Question " + n + "/" + TOTAL; },
+    bTag: "API Response • orienta_farah Summary",
+    apiFailPrefix: "Could not get an API response right now: "
+  }
+};
+
+function getLanguageRule(targetLang) {
+  if (targetLang === "en") {
+    return "STRICT LANGUAGE RULE: You MUST write your entire response in English ONLY. Do NOT use French or Arabic words.";
+  }
+  if (targetLang === "ar") {
+    return "قاعدة لغة صارمة: يجب أن تكتب كامل إجابتك باللغة العربية الفصحى أو الواضحة فقط. لا تستخدم الفرنسية أو الإنجليزية.";
+  }
+  return "RÈGLE DE LANGUE STRICTE : Tu DOIS écrire toute ta réponse en français uniquement. N'utilise ni l'anglais ni l'arabe.";
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function formatInlineMarkdown(text) {
+  var safe = escapeHtml(text);
+  return safe.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+}
+
+function renderFormattedText(rawText) {
+  var lines = String(rawText || "").split(/\r?\n/);
+  var html = "";
+  var inList = false;
+
+  function closeList() {
+    if (inList) {
+      html += "</ul>";
+      inList = false;
+    }
+  }
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) {
+      closeList();
+      continue;
+    }
+
+    if (/^[-*]{3,}$/.test(line)) {
+      closeList();
+      html += "<hr />";
+      continue;
+    }
+
+    if (/^\|[-:\s|]+\|$/.test(line)) {
+      continue;
+    }
+
+    if (/^\|.*\|$/.test(line)) {
+      closeList();
+      var cells = line
+        .slice(1, -1)
+        .split("|")
+        .map(function(c) { return formatInlineMarkdown(c.trim()); })
+        .filter(Boolean);
+      if (cells.length) {
+        html += "<p>" + cells.join(" • ") + "</p>";
+      }
+      continue;
+    }
+
+    var headingMatch = line.match(/^#{1,4}\s*(.+)$/);
+    if (headingMatch) {
+      closeList();
+      html += "<div class='sec-title'>" + formatInlineMarkdown(headingMatch[1]) + "</div>";
+      continue;
+    }
+
+    var bulletMatch = line.match(/^(?:[-*•]|\d+[.)])\s+(.+)$/);
+    if (bulletMatch) {
+      if (!inList) {
+        html += "<ul>";
+        inList = true;
+      }
+      html += "<li>" + formatInlineMarkdown(bulletMatch[1]) + "</li>";
+      continue;
+    }
+
+    closeList();
+    html += "<p>" + formatInlineMarkdown(line) + "</p>";
+  }
+
+  closeList();
+  return html || "<p>" + escapeHtml(rawText) + "</p>";
+}
+
+function isNonChatModel(id) {
+  var s = (id || "").toLowerCase();
+  return (
+    s.indexOf("guard") !== -1 ||
+    s.indexOf("whisper") !== -1 ||
+    s.indexOf("orpheus") !== -1 ||
+    s.indexOf("tts") !== -1 ||
+    s.indexOf("embed") !== -1 ||
+    s.indexOf("moderation") !== -1 ||
+    s.indexOf("audio") !== -1
+  );
+}
+
+function updateGradesUI() {
+  var t = I18N[lang];
+  var badge = document.getElementById("grade-status");
+  var btn = document.getElementById("t-analyze-grades");
+  if (gradeData) {
+    badge.textContent = t.gradeLoaded + gradeData.name;
+    btn.disabled = false;
+  } else {
+    badge.textContent = t.noGrade;
+    btn.disabled = true;
+  }
+}
+
+async function extractPdfContent(file) {
+  if (!window.pdfjsLib) {
+    throw new Error("pdf.js غير متوفر");
+  }
+  var arrayBuf = await file.arrayBuffer();
+  var pdf = await window.pdfjsLib.getDocument({ data: arrayBuf }).promise;
+  var maxPages = Math.min(pdf.numPages, 4);
+  var extractedText = "";
+  var renderedImages = [];
+
+  for (var p = 1; p <= maxPages; p++) {
+    var page = await pdf.getPage(p);
+    var textContent = await page.getTextContent();
+    var pageText = (textContent.items || [])
+      .map(function(item) { return item && typeof item.str === "string" ? item.str : ""; })
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (pageText) {
+      extractedText += "[Page " + p + "] " + pageText + "\n";
+    }
+
+    var viewport = page.getViewport({ scale: 1.4 });
+    var canvas = document.createElement("canvas");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    var ctx = canvas.getContext("2d");
+    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+    var dataUrl = canvas.toDataURL("image/png");
+    var base64 = dataUrl.indexOf(",") !== -1 ? dataUrl.split(",")[1] : "";
+    if (base64) {
+      renderedImages.push({ base64: base64, mimeType: "image/png" });
+    }
+  }
+
+  return {
+    text: extractedText.trim().slice(0, 8000),
+    images: renderedImages
+  };
+}
+
+function onGradeFileSelected(event) {
+  var file = event.target.files && event.target.files[0];
+  if (!file) return;
+  var t = I18N[lang];
+  var isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+  var isImage = /^image\//.test(file.type) || /\.(png|jpe?g|webp)$/i.test(file.name);
+
+  if (isPdf) {
+    document.getElementById("grade-status").textContent = t.readingPdf;
+    document.getElementById("t-analyze-grades").disabled = true;
+    extractPdfContent(file)
+      .then(function(pdfRes) {
+        gradeData = {
+          name: file.name,
+          text: pdfRes.text,
+          images: pdfRes.text ? [] : pdfRes.images
+        };
+        updateGradesUI();
+      })
+      .catch(function() {
+        gradeData = null;
+        updateGradesUI();
+      });
+    return;
+  }
+
+  if (isImage) {
+    var reader = new FileReader();
+    reader.onload = function() {
+      var res = String(reader.result || "");
+      var base64 = res.indexOf(",") !== -1 ? res.split(",")[1] : "";
+      gradeData = {
+        name: file.name,
+        text: "",
+        images: base64 ? [{ base64: base64, mimeType: file.type || "image/png" }] : []
+      };
+      updateGradesUI();
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+
+  file.text().then(function(content) {
+    gradeData = {
+      name: file.name,
+      text: String(content || "").slice(0, 8000),
+      images: []
+    };
+    updateGradesUI();
+  });
+}
+
+function setStatus(msg, isOk) {
+  var el = document.getElementById("setup-status");
+  el.textContent = msg || "";
+  el.className = "status-msg " + (msg ? (isOk ? "status-ok" : "status-err") : "");
+}
+
+function onProviderChange() {
+  var prov = document.getElementById("api-provider").value;
+  var mInp = document.getElementById("api-model-inp");
+  mInp.value = prov === "groq" ? "openai/gpt-oss-20b" : "gemini-2.5-flash";
+  setStatus("", false);
+}
+
+function setLang(l) {
+  if (!I18N[l]) return;
+  lang = l;
+  document.documentElement.lang = l;
+  document.body.classList.toggle("rtl", l === "ar");
+  document.getElementById("lang-sel").value = l;
+  var btns = document.querySelectorAll(".lang-btn");
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.toggle("active", btns[i].dataset.l === l);
+  }
+  var t = I18N[l];
+  document.getElementById("t-sub").textContent = t.sub;
+  document.getElementById("t-reset").textContent = t.reset;
+  document.getElementById("t-head").textContent = t.head;
+  document.getElementById("t-desc").textContent = t.desc;
+  document.getElementById("t-provider-lbl").textContent = t.providerLbl;
+  document.getElementById("t-key-lbl").textContent = t.keyLbl;
+  document.getElementById("t-model-lbl").textContent = t.modelLbl;
+  document.getElementById("api-key-inp").placeholder = t.keyPh;
+  document.getElementById("t-models").textContent = t.modelsBtn;
+  document.getElementById("t-test").textContent = t.testBtn;
+  document.getElementById("t-start").textContent = t.start;
+  document.getElementById("t-upload").textContent = t.uploadBtn;
+  document.getElementById("t-analyze-grades").textContent = t.analyzeGradesBtn;
+  updateGradesUI();
+  document.getElementById("inp").placeholder = step >= 8 ? t.phExtra : t.ph;
+  document.getElementById("t-send").textContent = t.send;
+}
+
+function setBar(n) {
+  document.getElementById("bar-fill").style.width = Math.min(Math.round((n / TOTAL) * 100), 100) + "%";
+}
+
+function validateConfig(requireModel) {
+  var provVal = document.getElementById("api-provider").value;
+  var keyVal = document.getElementById("api-key-inp").value.trim();
+  var modVal = document.getElementById("api-model-inp").value.trim();
+  var t = I18N[lang];
+
+  if (!keyVal) {
+    setStatus(t.needKey, false);
+    return null;
+  }
+  if (provVal === "groq" && keyVal.indexOf("AIza") === 0) {
+    setStatus(t.mismatchGroq, false);
+    return null;
+  }
+  if (provVal === "gemini" && keyVal.indexOf("gsk_") === 0) {
+    setStatus(t.mismatchGemini, false);
+    return null;
+  }
+  if (requireModel && !modVal) {
+    setStatus(t.needModel, false);
+    return null;
+  }
+  if (requireModel && isNonChatModel(modVal)) {
+    setStatus(t.nonChatModel, false);
+    return null;
+  }
+  setStatus("", false);
+  return { provVal: provVal, keyVal: keyVal, modVal: modVal };
+}
+
+async function fetchAvailableModels() {
+  var cfg = validateConfig(false);
+  if (!cfg) return;
+  var t = I18N[lang];
+  setStatus(t.loadingModels, true);
+
+  try {
+    if (cfg.provVal === "groq") {
+      var resG = await fetch("https://api.groq.com/openai/v1/models", {
+        method: "GET",
+        headers: { "Authorization": "Bearer " + cfg.keyVal }
+      });
+      var dataG = await resG.json().catch(function() { return null; });
+      if (!resG.ok) {
+        var errG = dataG && dataG.error && dataG.error.message ? (" — " + dataG.error.message) : "";
+        throw new Error("HTTP " + resG.status + errG);
+      }
+      var listG = (dataG && dataG.data) || [];
+      var chatIdsG = listG
+        .map(function(m) { return m.id; })
+        .filter(function(id) { return Boolean(id) && !isNonChatModel(id); });
+      if (!chatIdsG.length) {
+        setStatus(t.noModels, false);
+        return;
+      }
+      var pickedG = chatIdsG[0];
+      for (var i = 0; i < chatIdsG.length; i++) {
+        if (chatIdsG[i].indexOf("gpt-oss") !== -1 || chatIdsG[i].indexOf("llama") !== -1) {
+          pickedG = chatIdsG[i];
+          break;
+        }
+      }
+      document.getElementById("api-model-inp").value = pickedG;
+      setStatus(t.modelsFound + pickedG + " (" + chatIdsG.slice(0, 5).join(", ") + ")", true);
+    } else {
+      var urlM = "https://generativelanguage.googleapis.com/v1beta/models?key=" + encodeURIComponent(cfg.keyVal);
+      var resM = await fetch(urlM);
+      var dataM = await resM.json().catch(function() { return null; });
+      if (!resM.ok) {
+        var errM = dataM && dataM.error && dataM.error.message ? (" — " + dataM.error.message) : "";
+        throw new Error("HTTP " + resM.status + errM);
+      }
+      var listM = (dataM && dataM.models) || [];
+      var namesM = listM
+        .map(function(m) { return (m.name || "").replace(/^models\//, ""); })
+        .filter(function(id) { return Boolean(id) && !isNonChatModel(id); });
+      if (!namesM.length) {
+        setStatus(t.noModels, false);
+        return;
+      }
+      var pickedM = namesM[0];
+      for (var j = 0; j < namesM.length; j++) {
+        if (namesM[j].indexOf("flash") !== -1) {
+          pickedM = namesM[j];
+          break;
+        }
+      }
+      document.getElementById("api-model-inp").value = pickedM;
+      setStatus(t.modelsFound + pickedM + " (" + namesM.slice(0, 5).join(", ") + ")", true);
+    }
+  } catch (e) {
+    setStatus(t.apiFailPrefix + (e && e.message ? e.message : "Erreur"), false);
+  }
+}
+
+function extractOpenAICompatibleText(data) {
+  var msg = data && data.choices && data.choices[0] && data.choices[0].message;
+  if (!msg) return "";
+  if (typeof msg.content === "string" && msg.content.trim()) {
+    return msg.content.trim();
+  }
+  if (Array.isArray(msg.content)) {
+    var joined = msg.content
+      .map(function(part) {
+        if (typeof part === "string") return part;
+        if (part && typeof part.text === "string") return part.text;
+        return "";
+      })
+      .join("")
+      .trim();
+    if (joined) return joined;
+  }
+  return "";
+}
+
+async function postGroqOnce(key, mod, systemInstruction, userPrompt, maxTokens) {
+  var bodyObj = {
+    model: mod,
+    messages: [
+      { role: "system", content: systemInstruction },
+      { role: "user", content: userPrompt }
+    ],
+    temperature: 0.45,
+    max_tokens: maxTokens
+  };
+  if (mod.toLowerCase().indexOf("gpt-oss") !== -1) {
+    bodyObj.reasoning_effort = "low";
+  }
+
+  var resG = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + key
+    },
+    body: JSON.stringify(bodyObj)
+  });
+  var dataG = await resG.json().catch(function() { return null; });
+  if (!resG.ok) {
+    var detailG = dataG && dataG.error && dataG.error.message ? (" — " + dataG.error.message) : "";
+    throw new Error("HTTP " + resG.status + detailG);
+  }
+  return extractOpenAICompatibleText(dataG);
+}
+
+async function callLLMWithConfig(prov, key, mod, systemInstruction, userPrompt, maxTokens, inlineImages) {
+  var baseBudget = maxTokens || 1500;
+  var langGuard = getLanguageRule(lang);
+  var fullSystem = langGuard + "\n" + systemInstruction;
+  var fullUser = userPrompt + "\n\n" + langGuard;
+
+  if (prov === "groq") {
+    var txtG = await postGroqOnce(key, mod, fullSystem, fullUser, baseBudget);
+    if (!txtG) {
+      txtG = await postGroqOnce(key, mod, fullSystem, fullUser, Math.max(baseBudget * 2, 2400));
+    }
+    if (!txtG) throw new Error("Réponse vide");
+    return txtG;
+  }
+
+  var cleanMod = mod.replace(/^models\//, "");
+  var url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cleanMod) + ":generateContent?key=" + encodeURIComponent(key);
+  var partsPayload = [{ text: fullSystem + "\n\n" + fullUser }];
+  if (Array.isArray(inlineImages)) {
+    for (var k = 0; k < inlineImages.length; k++) {
+      if (inlineImages[k] && inlineImages[k].base64) {
+        partsPayload.push({
+          inlineData: {
+            mimeType: inlineImages[k].mimeType || "image/png",
+            data: inlineImages[k].base64
+          }
+        });
+      }
+    }
+  }
+
+  var resM = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: partsPayload }],
+      generationConfig: { temperature: 0.45, maxOutputTokens: Math.max(baseBudget, 1200) }
+    })
+  });
+  var dataM = await resM.json().catch(function() { return null; });
+  if (!resM.ok) {
+    var detailM = dataM && dataM.error && dataM.error.message ? (" — " + dataM.error.message) : "";
+    throw new Error("HTTP " + resM.status + detailM);
+  }
+  var parts = dataM && dataM.candidates && dataM.candidates[0] && dataM.candidates[0].content && dataM.candidates[0].content.parts;
+  var txtM = "";
+  if (Array.isArray(parts)) {
+    txtM = parts
+      .filter(function(p) { return p && typeof p.text === "string" && !p.thought; })
+      .map(function(p) { return p.text; })
+      .join("")
+      .trim();
+  }
+  if (!txtM) throw new Error("Réponse vide");
+  return txtM;
+}
+
+async function analyzeGrades() {
+  if (!gradeData) return;
+  var t = I18N[lang];
+  var hasImages = Array.isArray(gradeData.images) && gradeData.images.length > 0;
+
+  if (!gradeData.text && hasImages && provider !== "gemini") {
+    addBot(t.imageNeedsGemini, t.errTag, "err");
+    return;
+  }
+
+  addUser(t.uploadBtn + " : " + gradeData.name);
+  setLoading(true);
+  var analyzeBtn = document.getElementById("t-analyze-grades");
+  analyzeBtn.disabled = true;
+  var waitEl = addBot(t.thinking, t.apiTag);
+
+  try {
+    var ctx = historyQA.length
+      ? historyQA.map(function(x) { return "Q" + x.q + ": " + x.ans; }).join(" | ")
+      : "Aucun historique de questions préalable.";
+
+    var sys =
+      "Tu es orienta_farah, un conseiller d'orientation académique rigoureux et bienveillant. " +
+      "Analyse le relevé de notes fourni de manière précise, réaliste et structurée (sans tableaux Markdown '|' ni crochets). " +
+      "N'invente pas de seuils chiffrés officiels incertains ; explique plutôt les critères d'accès (dossier, notes clés, concours).";
+
+    var prompt =
+      "Contexte de l'élève: [" +
+      ctx +
+      "].\n" +
+      (gradeData.text
+        ? "Contenu extrait du relevé (" + gradeData.name + "):\n" + gradeData.text + "\n\n"
+        : "Le relevé de notes (" + gradeData.name + ") est joint sous forme de page(s) image(s).\n\n") +
+      "Structure ta réponse exactement ainsi:\n" +
+      "### Points forts et points faibles\n" +
+      "Liste à puces (- ) des matières/compétences fortes et des axes d'amélioration à partir des notes.\n" +
+      "### Écoles et filières à cibler\n" +
+      "Liste à puces (- ) des types d'écoles ou filières cohérentes avec ces notes et ce profil, en expliquant le lien avec les résultats.\n" +
+      "### Concours et plan de préparation\n" +
+      "Liste numérotée (1. 2. 3.) des concours/voies à préparer et des priorités de révision concrètes.";
+
+    var imgsToSend = !gradeData.text && hasImages ? gradeData.images : null;
+    var resTxt = await callLLMWithConfig(provider, apiKey, modelName, sys, prompt, 2400, imgsToSend);
+    waitEl.remove();
+    addBot(resTxt, t.gradesTag, "grades");
+  } catch (e) {
+    waitEl.remove();
+    addBot(t.apiFailPrefix + (e && e.message ? e.message : "Erreur"), t.errTag, "err");
+  } finally {
+    analyzeBtn.disabled = false;
+    setLoading(false);
+    document.getElementById("inp").focus();
+  }
+}
+
+async function testApiKey() {
+  var cfg = validateConfig(true);
+  if (!cfg) return;
+  var t = I18N[lang];
+  var modelsBtn = document.getElementById("t-models");
+  var testBtn = document.getElementById("t-test");
+  var startBtn = document.getElementById("t-start");
+  modelsBtn.disabled = true;
+  testBtn.disabled = true;
+  startBtn.disabled = true;
+  setStatus(t.testing, true);
+  try {
+    await callLLMWithConfig(cfg.provVal, cfg.keyVal, cfg.modVal, "Reply with OK.", "OK", 1500);
+    setStatus(t.testOk, true);
+  } catch (e) {
+    setStatus(t.apiFailPrefix + (e && e.message ? e.message : "Erreur"), false);
+  } finally {
+    modelsBtn.disabled = false;
+    testBtn.disabled = false;
+    startBtn.disabled = false;
+  }
+}
+
+function setLoading(loading) {
+  document.getElementById("inp").disabled = loading;
+  document.getElementById("t-send").disabled = loading;
+}
+
+async function startApp() {
+  var cfg = validateConfig(true);
+  if (!cfg) return;
+  var t = I18N[lang];
+
+  provider = cfg.provVal;
+  apiKey = cfg.keyVal;
+  modelName = cfg.modVal;
+  step = 1;
+  historyQA = [];
+
+  document.getElementById("setup").style.display = "none";
+  document.getElementById("chat").style.display = "flex";
+  document.getElementById("msgs").innerHTML = "";
+  document.getElementById("inp").placeholder = t.ph;
+  updateGradesUI();
+  setBar(1);
+
+  setLoading(true);
+  var waitEl = addBot(t.thinking, t.apiTag);
+  try {
+    var sys = "You are orienta_farah, a clear, friendly post-graduation guidance agent. Never use Markdown tables (|) or placeholders like [Name].";
+    var prompt = "Ask only question 1 out of 7 about this topic: " + QUESTION_TOPICS[lang][1] + ". Be clear, natural, and concise.";
+    var q1 = await callLLMWithConfig(provider, apiKey, modelName, sys, prompt, 1500);
+    waitEl.remove();
+    addBot(q1, t.qTag(1));
+  } catch (e) {
+    waitEl.remove();
+    addBot(t.apiFailPrefix + (e && e.message ? e.message : "Erreur"), t.errTag, "err");
+  } finally {
+    setLoading(false);
+    document.getElementById("inp").focus();
+  }
+}
+
+function resetApp() {
+  step = 0;
+  historyQA = [];
+  gradeData = null;
+  document.getElementById("grade-file-inp").value = "";
+  updateGradesUI();
+  document.getElementById("chat").style.display = "none";
+  document.getElementById("setup").style.display = "flex";
+  document.getElementById("msgs").innerHTML = "";
+  setBar(0);
+}
+
+async function onSend() {
+  var inp = document.getElementById("inp");
+  var txt = inp.value.trim();
+  if (!txt || inp.disabled) return;
+  inp.value = "";
+  addUser(txt);
+
+  var t = I18N[lang];
+  var sys =
+    "You are orienta_farah, a post-graduation guidance agent. Never use Markdown tables (|) or placeholders like [Name]. Never repeat an already asked question.";
+
+  setLoading(true);
+
+  if (step >= 1 && step < TOTAL) {
+    historyQA.push({ q: step, ans: txt });
+    var nextQ = step + 1;
+    var waitQ = addBot(t.thinking, t.apiTag);
+    try {
+      var summarySoFar = historyQA.map(function(x) { return "Q" + x.q + ": " + x.ans; }).join(" | ");
+      var coveredTopics = Object.keys(QUESTION_TOPICS[lang])
+        .slice(0, step)
+        .map(function(k) { return QUESTION_TOPICS[lang][k]; })
+        .join("; ");
+      var qPrompt =
+        "Previous answers: [" +
+        summarySoFar +
+        "]. Already covered topics: [" +
+        coveredTopics +
+        "]. Ask ONLY question " +
+        nextQ +
+        " out of " +
+        TOTAL +
+        " focused strictly on this new topic: [" +
+        QUESTION_TOPICS[lang][nextQ] +
+        "]. One single clear and natural question, without repeating previous topics.";
+      var replyQ = await callLLMWithConfig(provider, apiKey, modelName, sys, qPrompt, 1500);
+      waitQ.remove();
+      step = nextQ;
+      setBar(step);
+      addBot(replyQ, t.qTag(step));
+    } catch (e) {
+      waitQ.remove();
+      historyQA.pop();
+      addBot(t.apiFailPrefix + (e && e.message ? e.message : "Erreur"), t.errTag, "err");
+    } finally {
+      setLoading(false);
+      inp.focus();
+    }
+    return;
+  }
+
+  if (step === TOTAL) {
+    historyQA.push({ q: step, ans: txt });
+    setBar(TOTAL);
+    var waitB = addBot(t.thinking, t.apiTag);
+    try {
+      var allQ = historyQA.map(function(x) { return "Q" + x.q + ": " + x.ans; }).join(" | ");
+      var bilanPrompt =
+        "Here are the 7 answers from the student: [" +
+        allQ +
+        "]. Write a clear, well-structured guidance summary directly tailored to these answers (no tables, no brackets):\n" +
+        "### Profile summary\n" +
+        "One short clear paragraph summarizing the answers.\n" +
+        "### Recommended tracks\n" +
+        "A bullet list (- ) of 2 to 3 suitable tracks with a clear reason based on the answers.\n" +
+        "### 3-step action plan\n" +
+        "A numbered list (1. 2. 3.) of 3 concrete next steps.";
+      var bilanTxt = await callLLMWithConfig(provider, apiKey, modelName, sys, bilanPrompt, 2200);
+      waitB.remove();
+      step = TOTAL + 1;
+      addBot(bilanTxt, t.bTag);
+      inp.placeholder = t.phExtra;
+    } catch (e) {
+      waitB.remove();
+      historyQA.pop();
+      addBot(t.apiFailPrefix + (e && e.message ? e.message : "Erreur"), t.errTag, "err");
+    } finally {
+      setLoading(false);
+      inp.focus();
+    }
+    return;
+  }
+
+  var waitE = addBot(t.thinking, t.apiTag);
+  try {
+    var ctx = historyQA.map(function(x) { return "Q" + x.q + ": " + x.ans; }).join(" | ");
+    var gradeCtx = gradeData && gradeData.text ? "\nImported grades:\n" + gradeData.text : "";
+    var extraPrompt =
+      "Student profile (7 answers): [" +
+      ctx +
+      "]." +
+      gradeCtx +
+      "\nStudent question: " +
+      txt +
+      "\nAnswer clearly, concisely, and helpfully using short paragraphs or bullet points (- ), taking their profile into account.";
+    var extraTxt = await callLLMWithConfig(provider, apiKey, modelName, sys, extraPrompt, 1800);
+    waitE.remove();
+    addBot(extraTxt, t.apiTag);
+  } catch (e) {
+    waitE.remove();
+    addBot(t.apiFailPrefix + (e && e.message ? e.message : "Erreur"), t.errTag, "err");
+  } finally {
+    setLoading(false);
+    inp.focus();
+  }
+}
+
+function addBot(txt, tag, badgeType) {
+  var box = document.getElementById("msgs");
+  var d = document.createElement("div");
+  d.className = "msg bot";
+  if (tag) {
+    var tg = document.createElement("div");
+    tg.className = badgeType === "err" ? "tag err" : (badgeType === "grades" ? "tag grades" : "tag");
+    tg.textContent = tag;
+    d.appendChild(tg);
+  }
+  var b = document.createElement("div");
+  b.innerHTML = renderFormattedText(txt);
+  d.appendChild(b);
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+  return d;
+}
+
+function addUser(txt) {
+  var box = document.getElementById("msgs");
+  var d = document.createElement("div");
+  d.className = "msg user";
+  d.textContent = txt;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+setLang("fr");
+</script>
+</body>
+</html>
